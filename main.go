@@ -12,18 +12,25 @@ var (
 	host     *string
 	username *string
 	password *string
+	database *string
 )
 
 func init() {
 	host = flag.String("host", "http://localhost:8086", "hostname of inlfux server")
 	username = flag.String("u", "", "username for influx auth")
 	password = flag.String("p", "", "password for influx auth")
+	database = flag.String("d", "", "database in influx")
 	flag.Parse()
 }
 
 func main() {
 	sc := NewSchamaShape()
-	sc.getDatabases()
+
+	if *database == "" {
+		sc.getDatabases()
+	} else {
+		sc.showDatabase(*database)
+	}
 }
 
 // NewSchamaShape returns things
@@ -54,15 +61,19 @@ func (sc *SchemaShape) getDatabases() {
 	check(err)
 	check(ret.Error())
 	for _, val := range ret.Results[0].Series[0].Values {
-		db := NewDatabase(val[0].(string))
-		sc.Databases = append(sc.Databases, db)
-		fmt.Println(db)
-		db.getRPs(sc.Client)
-		db.getMeasurements(sc.Client)
-		fmt.Println()
+		sc.showDatabase(val[0].(string))
 	}
 	// for _, db := range sc.Databases {
 	// }
+}
+
+func (sc *SchemaShape) showDatabase(name string) {
+	db := NewDatabase(name)
+	sc.Databases = append(sc.Databases, db)
+	fmt.Println(db)
+	db.getRPs(sc.Client)
+	db.getMeasurements(sc.Client)
+	fmt.Println()
 }
 
 // NewDatabase returns a Database
